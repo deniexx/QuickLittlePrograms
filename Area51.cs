@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Threading;
 using System.IO;
@@ -7,16 +7,18 @@ namespace Area51
 {
     class Agents
     {
-        public string secLevel = "";
-        public int floor = 0;
+        public string SecLevel = "";
+        public int Floor;
     }
 
-    class Program
+    static class Program
     {
-        static void Main()
+        private static void Main()
         {
-            int i = 0;
+            Random rand = new Random();
+            var i = 0;
             string docPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            int elevatorPos = rand.Next(1, 4);
             using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt")))
             {
                 outputFile.WriteLine("Output: ");
@@ -24,53 +26,46 @@ namespace Area51
             }
             Thread agent = new Thread(delegate()
             {
-                AgentThread(i);
+                AgentThread(i, elevatorPos);
             });
             agent.Start();
         }
 
-        static void AgentThread(int i)
+        private static void AgentThread(int i, int elevPos)
         {
             string[] secLevels = { "c", "s", "ts" };
             string docPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             int[] floors = {1, 2, 3, 4}; //1-g, 2-s- 3-t1, 4-t2
             Random rand = new Random();
 
-            Agents agent = new Agents();
-            agent.secLevel = secLevels[rand.Next(0, 2)];
+            Agents agent = new Agents {SecLevel = secLevels[rand.Next(0, 2)]};
 
-            if (agent.secLevel == "c")
+            agent.Floor = agent.SecLevel switch
             {
-                agent.floor = 1;
-            }
-            else if (agent.secLevel == "s")
-            {
-                agent.floor = floors[rand.Next(1,2)];
-            }
-            else if (agent.secLevel == "ts")
-            {
-                agent.floor = floors[rand.Next(1,4)];
-            }
+                "c" => 1,
+                "s" => floors[rand.Next(1, 2)],
+                "ts" => floors[rand.Next(1, 4)],
+                _ => agent.Floor
+            };
 
             int agentNum = i + 1;
             using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
             {
-                outputFile.WriteLine("Agent " + agentNum + " spawned at floor number " + agent.floor + ", with security level: " + agent.secLevel);
+                outputFile.WriteLine("Agent " + agentNum + " spawned at floor number " + agent.Floor + ", with security level: " + agent.SecLevel);
             }
-            Console.WriteLine("Agent spawned at floor number " + agent.floor + ", with security level: " + agent.secLevel);
+            Console.WriteLine("Agent spawned at floor number " + agent.Floor + ", with security level: " + agent.SecLevel);
             
             Thread elevator = new Thread(delegate()
             {
-                ElevatorThread(agent.floor, agent.secLevel, docPath, i);
+                ElevatorThread(agent.Floor, agent.SecLevel, docPath, i, elevPos);
             });
             elevator.Start();
         }
 
-        static void ElevatorThread(int agFloor, string agSec, string docPath, int i)
+        static void ElevatorThread(int agFloor, string agSec, string docPath, int i, int elevatorPos)
         {
-            string[] inputs = {"y", "n"};
             Random rand = new Random();
-            int elevatorPos = rand.Next(1, 4);
+            string[] inputs = {"y", "n"};
             using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
             {
                 outputFile.WriteLine("Starting position of the elevator is " + elevatorPos);
@@ -140,10 +135,8 @@ namespace Area51
                 else
                 {
                     Console.WriteLine("You are already on G floor!");
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
-                    {
-                        outputFile.WriteLine("Agent is already on G floor!");
-                    }
+                    using StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true);
+                    outputFile.WriteLine("Agent is already on G floor!");
                 }
             }
             else if (command == "s")
@@ -169,10 +162,8 @@ namespace Area51
                 else
                 {
                     Console.WriteLine("You are already on S floor!");
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
-                    {
-                        outputFile.WriteLine("Agent is already on S floor!");
-                    }
+                    using StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true);
+                    outputFile.WriteLine("Agent is already on S floor!");
                 }
             }
             else if (command == "t1")
@@ -198,10 +189,8 @@ namespace Area51
                 else
                 {
                     Console.WriteLine("You are already on t1 floor!");
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
-                    {
-                        outputFile.WriteLine("Agent is already on T1 floor!");
-                    }
+                    using StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true);
+                    outputFile.WriteLine("Agent is already on T1 floor!");
                 }
             }
             else if (command == "t2")
@@ -227,10 +216,8 @@ namespace Area51
                 else
                 {
                     Console.WriteLine("You are already on t2 floor!");
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
-                    {
-                        outputFile.WriteLine("Agent is already on T2 floor!");
-                    }
+                    using StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true);
+                    outputFile.WriteLine("Agent is already on T2 floor!");
                 }
             }
             DoorCheck(agFloor, agSec, elevatorPos, docPath, i);
@@ -246,29 +233,30 @@ namespace Area51
                 ElevatorButtons(agFloor, agSec, elevatorPos, docPath, i);
             else
             {
-                if (agSec == "ts")
+                switch (agSec)
                 {
-                    Console.WriteLine("The door opens.");
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                    case "ts":
                     {
-                        outputFile.WriteLine("Agent has chosen to open the door.");
-                        outputFile.WriteLine("-----------------------------------");
-                    }
-                    
-                    i += 1;
-                    if (i < 3)
-                    {
-                        Thread agent = new Thread(delegate()
+                        Console.WriteLine("The door opens.");
+                        using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
                         {
-                            AgentThread(i);
-                        });
-                        agent.Start();
-                    }
+                            outputFile.WriteLine("Agent has chosen to open the door.");
+                            outputFile.WriteLine("-----------------------------------");
+                        }
                     
-                }
-                else if (agSec == "s")
-                {
-                    if (elevatorPos <= 2)
+                        i += 1;
+                        if (i < 3)
+                        {
+                            Thread agent = new Thread(delegate()
+                            {
+                                AgentThread(i, elevatorPos);
+                            });
+                            agent.Start();
+                        }
+
+                        break;
+                    }
+                    case "s" when elevatorPos <= 2:
                     {
                         Console.WriteLine("The door opens.");
                         using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
@@ -282,43 +270,14 @@ namespace Area51
                         {
                             Thread agent = new Thread(delegate()
                             {
-                                AgentThread(i);
+                                AgentThread(i, elevatorPos);
                             });
                             agent.Start();
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("You don't have permission, please choose another floor!");
-                        using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
-                        {
-                            outputFile.WriteLine("Agent hasn't got permission to open the door!");
-                        }
-                        ElevatorButtons(agFloor, agSec, elevatorPos, docPath, i);
-                    }
-                }
-                else
-                {
-                    if (elevatorPos == 1)
-                    {
-                        Console.WriteLine("The door opens.");
-                        using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
-                        {
-                            outputFile.WriteLine("Agent has chosen to open the door.");
-                            outputFile.WriteLine("-----------------------------------");
                         }
 
-                        i += 1;
-                        if (i < 3)
-                        {
-                            Thread agent = new Thread(delegate()
-                            {
-                                AgentThread(i);
-                            });
-                            agent.Start();
-                        }
+                        break;
                     }
-                    else
+                    case "s":
                     {
                         Console.WriteLine("You don't have permission, please choose another floor!");
                         using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
@@ -326,6 +285,40 @@ namespace Area51
                             outputFile.WriteLine("Agent hasn't got permission to open the door!");
                         }
                         ElevatorButtons(agFloor, agSec, elevatorPos, docPath, i);
+                        break;
+                    }
+                    default:
+                    {
+                        if (elevatorPos == 1)
+                        {
+                            Console.WriteLine("The door opens.");
+                            using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                            {
+                                outputFile.WriteLine("Agent has chosen to open the door.");
+                                outputFile.WriteLine("-----------------------------------");
+                            }
+
+                            i += 1;
+                            if (i < 3)
+                            {
+                                Thread agent = new Thread(delegate()
+                                {
+                                    AgentThread(i, elevatorPos);
+                                });
+                                agent.Start();
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("You don't have permission, please choose another floor!");
+                            using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                            {
+                                outputFile.WriteLine("Agent hasn't got permission to open the door!");
+                            }
+                            ElevatorButtons(agFloor, agSec, elevatorPos, docPath, i);
+                        }
+
+                        break;
                     }
                 }
             }
@@ -333,37 +326,44 @@ namespace Area51
         
         static void ElevatorPosition(int elevPos, string docPath)
         {
-            if (elevPos == 1)
+            switch (elevPos)
             {
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                case 1:
                 {
-                    outputFile.WriteLine("Elevator is at G floor");
+                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                    {
+                        outputFile.WriteLine("Elevator is at G floor");
+                    }
+                    Console.WriteLine("Elevator is at G floor");
+                    break;
                 }
-                Console.WriteLine("Elevator is at G floor");
-            }
-            else if (elevPos == 2)
-            {
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                case 2:
                 {
-                    outputFile.WriteLine("Elevator is at S floor");
+                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                    {
+                        outputFile.WriteLine("Elevator is at S floor");
+                    }
+                    Console.WriteLine("Elevator is at S floor");
+                    break;
                 }
-                Console.WriteLine("Elevator is at S floor");
-            }
-            else if (elevPos == 3)
-            {
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                case 3:
                 {
-                    outputFile.WriteLine("Elevator is at T1 floor");
+                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                    {
+                        outputFile.WriteLine("Elevator is at T1 floor");
+                    }
+                    Console.WriteLine("Elevator is at T1 floor");
+                    break;
                 }
-                Console.WriteLine("Elevator is at T1 floor");
-            }
-            else
-            {
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                default:
                 {
-                    outputFile.WriteLine("Elevator is at T2 floor");
+                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, "Output.txt"), true))
+                    {
+                        outputFile.WriteLine("Elevator is at T2 floor");
+                    }
+                    Console.WriteLine("Elevator is at T2 floor");
+                    break;
                 }
-                Console.WriteLine("Elevator is at T2 floor");
             }
         }
     }
